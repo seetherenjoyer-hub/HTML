@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Vault — Emulator Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0e0e12; --surface:#16161c; --surface2:#1e1e26;
+    --border:rgba(255,255,255,0.07); --border-h:rgba(255,255,255,0.14);
+    --text:#e8e8f0; --muted:#6b6b80; --subtle:#22222e;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+  header{padding:52px 60px 36px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(30px,5vw,54px);letter-spacing:-1.5px;color:#fff}
+  h1 em{font-style:normal;color:#e4000f}
+  header p{margin-top:8px;color:var(--muted);font-size:14px;font-weight:300}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;font-size:12px;color:var(--muted);white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:pulse 2.5s ease-in-out infinite;flex-shrink:0}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+
+  main{padding:0 60px 80px;max-width:1440px;margin:0 auto}
+  .mfr-section{padding-top:52px}
+  .mfr-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+  .mfr-chip{width:38px;height:38px;border-radius:10px;font-size:19px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .mfr-label{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#fff}
+  .mfr-count{font-size:12px;color:var(--muted);font-weight:300}
+  .mfr-rule{flex:1;height:1px;background:var(--border)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s,box-shadow .2s}
+  .card:hover{border-color:var(--border-h);transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.5)}
+  .card-img{width:100%;height:110px;background:#0b0b10;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+  .card-img img{max-width:88%;max-height:96px;width:auto;height:auto;object-fit:contain;display:block;transition:transform .3s;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+  .card:hover .card-img img{transform:scale(1.08)}
+  .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;flex:1}
+  .card-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .card-mfr{font-size:11px;color:var(--muted)}
+  .card-year{font-size:11px;color:var(--muted);background:var(--subtle);padding:3px 9px;border-radius:100px}
+  .card-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff;margin-bottom:4px}
+  .card-desc{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:12px;flex:1;line-height:1.5}
+  .card-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+  .chip{font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;background:var(--subtle);color:var(--muted)}
+  .chip-accent{background:var(--ca-bg);color:var(--ca-fg)}
+  .chip-warn{background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3)}
+  .card-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px 12px;background:transparent;border:1px solid var(--border-h);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border-radius:9px;transition:background .2s,border-color .2s,color .2s}
+  .card-btn:hover{background:var(--btn-bg);border-color:var(--btn-bdr);color:#fff}
+  .play-dot{width:15px;height:15px;border-radius:50%;background:var(--pdot);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;flex-shrink:0}
+
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);z-index:1000;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border-h);border-radius:20px;width:100%;max-width:880px;max-height:92vh;overflow-y:auto;animation:pop .22s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes pop{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:none}}
+  .modal-hdr{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:5}
+  .modal-hdr-l{display:flex;align-items:center;gap:12px}
+  .modal-ico{width:40px;height:40px;border-radius:10px;background:var(--subtle);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0}
+  .modal-ico img{width:36px;height:36px;object-fit:contain}
+  .modal-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#fff}
+  .modal-sub{font-size:12px;color:var(--muted);font-weight:300}
+  .x-btn{width:34px;height:34px;border-radius:8px;background:var(--subtle);border:none;color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;flex-shrink:0}
+  .x-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+  .modal-body{padding:24px}
+
+  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:20px}
+  .info-cell{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px}
+  .info-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:3px}
+  .info-val{font-size:13px;color:var(--text);font-weight:500}
+
+  .warn-banner{background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.25);border-radius:10px;padding:11px 14px;margin-bottom:18px;font-size:12px;color:#fb923c;display:flex;align-items:flex-start;gap:10px;line-height:1.5}
+  .warn-banner span{font-size:16px;flex-shrink:0}
+
+  .drop-zone{border:1.5px dashed var(--border-h);border-radius:13px;padding:40px 24px;text-align:center;cursor:pointer;position:relative;background:var(--surface2);margin-bottom:20px;transition:border-color .2s,background .2s}
+  .drop-zone:hover,.drop-zone.over{border-color:var(--dz-accent,rgba(255,255,255,.3));background:var(--surface)}
+  .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dz-ico{font-size:36px;margin-bottom:10px;display:block}
+  .dz-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff;margin-bottom:5px}
+  .dz-hint{font-size:12px;color:var(--muted)}
+
+  #emu-wrap{display:none;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#000;margin-bottom:20px}
+  #emu-wrap.on{display:block}
+  #emu-wrap>div{width:100%;height:510px}
+
+  .emu-loading{height:510px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted);font-size:13px}
+  .spinner{width:32px;height:32px;border:2px solid var(--border-h);border-top-color:var(--spin-color,#e4000f);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .ctrl-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:9px}
+  .ctrl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:7px}
+  .ctrl-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:8px 11px;font-size:12px;color:var(--muted)}
+  .key{background:var(--subtle);border:1px solid var(--border-h);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--text);font-weight:500}
+
+  footer{border-top:1px solid var(--border);padding:18px 60px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:300;flex-wrap:wrap;gap:8px}
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:3px}
+  @media(max-width:768px){header,main,footer{padding-left:18px;padding-right:18px}header{padding-top:30px}.info-grid{grid-template-columns:1fr 1fr}.modal-body{padding:16px}}
+  @media(max-width:480px){.info-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Retro <em>Vault</em></h1>
+    <p>Emulator hub powered by EmulatorJS &amp; RetroArch WebAssembly cores</p>
+  </div>
+  <div class="badge"><span class="dot"></span>Cores loaded on demand · ROMs stay local</div>
+</header>
+
+<main id="main"></main>
+
+<footer>
+  <span>Drop any ROM file to start playing</span>
+  <span>Keyboard &amp; gamepad supported · Use ✕ to close</span>
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-hdr-l">
+        <div class="modal-ico" id="mico"></div>
+        <div>
+          <div class="modal-ttl" id="mttl"></div>
+          <div class="modal-sub" id="msub"></div>
+        </div>
+      </div>
+      <button class="x-btn" id="x-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid" id="igrid"></div>
+      <div id="exp-warn" style="display:none" class="warn-banner">
+        <span>⚠️</span>
+        <div><strong>Experimental Core (Dolphin)</strong> — GameCube &amp; Wii emulation via WebAssembly is not fully tested and may be very slow or fail to run. Performance depends heavily on your device and browser.</div>
+      </div>
+
+      <div class="drop-zone" id="dz">
+        <input type="file" id="rom-file" accept="*/*" onchange="handleFile(this.files[0])">
+        <span class="dz-ico">📂</span>
+        <div class="dz-ttl">Drop your ROM here</div>
+        <div class="dz-hint" id="dz-hint">Click or drag a ROM file to load it</div>
+      </div>
+
+      <div id="emu-wrap"></div>
+
+      <div class="ctrl-lbl">Default Controls</div>
+      <div class="ctrl-grid">
+        <div class="ctrl-row"><span>D-Pad</span><span class="key">WASD / Arrows</span></div>
+        <div class="ctrl-row"><span>A Button</span><span class="key">Z</span></div>
+        <div class="ctrl-row"><span>B Button</span><span class="key">X</span></div>
+        <div class="ctrl-row"><span>X Button</span><span class="key">A</span></div>
+        <div class="ctrl-row"><span>Y Button</span><span class="key">S</span></div>
+        <div class="ctrl-row"><span>Start</span><span class="key">Enter</span></div>
+        <div class="ctrl-row"><span>Select</span><span class="key">Shift</span></div>
+        <div class="ctrl-row"><span>L Shoulder</span><span class="key">Q</span></div>
+        <div class="ctrl-row"><span>R Shoulder</span><span class="key">E</span></div>
+        <div class="ctrl-row"><span>Fullscreen</span><span class="key">F</span></div>
+        <div class="ctrl-row"><span>Save State</span><span class="key">F2</span></div>
+        <div class="ctrl-row"><span>Load State</span><span class="key">F4</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Wikimedia Special:Redirect — resolves filenames directly, no hash needed
+const WM = (file, w=300) =>
+  `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(file)}&width=${w}`;
+
+const MFRS = [
+  {
+    id:'nintendo', name:'Nintendo', icon:'🎮', color:'#e4000f',
+    systems:[
+      { id:'nes',        name:'NES',               desc:'Nintendo Entertainment System',          era:'1983', core:'nes',      ext:'.nes .unf',               gen:'3rd Gen',
+        img:WM('NES-Console-Set.png') },
+      { id:'snes',       name:'Super Nintendo',    desc:'Super Nintendo Entertainment System',    era:'1990', core:'snes',     ext:'.smc .sfc .fig',          gen:'4th Gen',
+        img:WM('SNES-Mod1-Console-Set.png') },
+      { id:'n64',        name:'Nintendo 64',       desc:'64-bit home console',                    era:'1996', core:'n64',      ext:'.z64 .n64 .v64',          gen:'5th Gen',
+        img:WM('Nintendo-64-wController-L.jpg') },
+      { id:'gameboy',    name:'Game Boy',          desc:'Original monochrome Game Boy (DMG)',      era:'1989', core:'gb',       ext:'.gb .sgb',                gen:'Handheld',
+        img:WM('Game-Boy-FL.png') },
+      { id:'gbc',        name:'Game Boy Color',    desc:'Color variant of the Game Boy',           era:'1998', core:'gbc',      ext:'.gbc .gb',                gen:'Handheld',
+        img:WM('Nintendo-Game-Boy-Color-FL.png') },
+      { id:'gba',        name:'Game Boy Advance',  desc:'32-bit portable powerhouse',             era:'2001', core:'gba',      ext:'.gba .agb .bin',          gen:'Handheld',
+        img:WM('Nintendo-Game-Boy-Advance-Purple-FL.jpg') },
+      { id:'nds',        name:'Nintendo DS',       desc:'Dual-screen touchscreen handheld',        era:'2004', core:'nds',      ext:'.nds',                    gen:'7th Gen',
+        img:WM('Nintendo-DS-Lite-Black-Open.png') },
+      { id:'virtualboy', name:'Virtual Boy',       desc:'Stereoscopic tabletop console',           era:'1995', core:'vb',       ext:'.vb .vboy',               gen:'5th Gen',
+        img:WM('VirtualBoy-01.jpg') },
+      { id:'gamecube',   name:'GameCube',          desc:"Nintendo's first optical disc console",   era:'2001', core:'gamecube', ext:'.iso .gcm .gcz .rvz',     gen:'6th Gen', experimental:true,
+        img:WM('GameCube-Console-Set.png') },
+      { id:'wii',        name:'Wii',               desc:'Motion-controlled home console',          era:'2006', core:'wii',      ext:'.iso .wbfs .rvz .wad',    gen:'7th Gen', experimental:true,
+        img:WM('Wii-console.jpg') },
+    ]
+  },
+  {
+    id:'sega', name:'Sega', icon:'⚡', color:'#1a56db',
+    systems:[
+      { id:'mastersystem', name:'Master System',        desc:'Sega 8-bit home console',            era:'1985', core:'segaMS',  ext:'.sms .bin .sg',            gen:'3rd Gen',
+        img:WM('Sega-Master-System-Set.png') },
+      { id:'genesis',      name:'Mega Drive / Genesis', desc:'Sega flagship 16-bit console',       era:'1988', core:'segaMD',  ext:'.md .bin .smd .gen',        gen:'4th Gen',
+        img:WM('Sega-Mega-Drive-JP-Mk1-Console-Set.png') },
+      { id:'segacd',       name:'Sega CD',              desc:'CD-ROM add-on for the Genesis',      era:'1991', core:'segaCD',  ext:'.bin .chd .cue .iso .m3u',  gen:'4th Gen',
+        img:WM('Sega-CD-Model1-Set.jpg') },
+      { id:'sega32x',      name:'Sega 32X',             desc:'32X expansion add-on for Genesis',   era:'1994', core:'sega32x', ext:'.32x .bin .md',             gen:'4th/5th',
+        img:WM('Sega-Genesis-32X-Standalone.jpg') },
+      { id:'gamegear',     name:'Game Gear',            desc:'Sega color handheld console',        era:'1990', core:'segaGG',  ext:'.gg .bin',                  gen:'Handheld',
+        img:WM('Game-Gear-Handheld.jpg') },
+    ]
+  },
+  {
+    id:'sony', name:'Sony', icon:'🔷', color:'#00439c',
+    systems:[
+      { id:'psx', name:'PlayStation', desc:"Sony's first home console", era:'1994', core:'psx', ext:'.bin .cue .img .pbp .chd .m3u', gen:'5th Gen',
+        img:WM('PSX-Console-wController.png') },
+    ]
+  },
+];
+
+const EJS_CORES = {
+  nes:'nes', snes:'snes', n64:'n64', gameboy:'gb', gbc:'gbc', gba:'gba',
+  nds:'nds', virtualboy:'vb', mastersystem:'segaMS', genesis:'segaMD',
+  segacd:'segaCD', sega32x:'sega32x', gamegear:'segaGG',
+  psx:'psx', gamecube:'gamecube', wii:'wii'
+};
+
+let curSys = null, curMfr = null, romBlobUrl = null;
+
+// ── Render ──────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('main').innerHTML = MFRS.map(mfr => `
+    <section class="mfr-section">
+      <div class="mfr-header">
+        <div class="mfr-chip" style="background:color-mix(in srgb,${mfr.color} 18%,#1e1e26)">${mfr.icon}</div>
+        <div>
+          <div class="mfr-label">${mfr.name}</div>
+          <div class="mfr-count">${mfr.systems.length} system${mfr.systems.length > 1 ? 's' : ''}</div>
+        </div>
+        <div class="mfr-rule"></div>
+      </div>
+      <div class="grid">${mfr.systems.map(s => mkCard(s, mfr)).join('')}</div>
+    </section>`).join('');
+}
+
+function mkCard(s, mfr) {
+  const caBg  = `color-mix(in srgb,${mfr.color} 15%,transparent)`;
+  const btnBg  = `color-mix(in srgb,${mfr.color} 10%,transparent)`;
+  const btnBdr = `color-mix(in srgb,${mfr.color} 35%,transparent)`;
+  return `
+  <div class="card" onclick="pickSystem('${s.id}','${mfr.id}')">
+    <div class="card-img">
+      <img src="${s.img}" alt="${s.name}" loading="lazy"
+           onerror="this.outerHTML='<span style=\\'font-size:36px\\'>${s.icon || '🎮'}</span>'">
+    </div>
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="card-mfr">${mfr.name}</span>
+        <span class="card-year">${s.era}</span>
+      </div>
+      <div class="card-name">${s.name}</div>
+      <div class="card-desc">${s.desc}</div>
+      <div class="card-chips">
+        <span class="chip chip-accent" style="--ca-bg:${caBg};--ca-fg:${mfr.color}">${s.gen}</span>
+        <span class="chip">${s.core}</span>
+        ${s.experimental ? '<span class="chip chip-warn">⚠ Experimental</span>' : ''}
+      </div>
+      <button class="card-btn"
+        style="--btn-bg:${btnBg};--btn-bdr:${btnBdr};--pdot:${mfr.color}"
+        onclick="event.stopPropagation();pickSystem('${s.id}','${mfr.id}')">
+        <span class="play-dot">▶</span>Load ROM
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── Modal ────────────────────────────────────────────────────────────
+function pickSystem(sId, mId) {
+  curMfr = MFRS.find(m => m.id === mId);
+  curSys = curMfr && curMfr.systems.find(s => s.id === sId);
+  if (!curSys) return;
+
+  if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
+
+  const ew = document.getElementById('emu-wrap');
+  ew.className = ''; ew.innerHTML = '';
+  const dz = document.getElementById('dz');
+  dz.style.display = 'block';
+  document.getElementById('rom-file').value = '';
+
+  // Header icon
+  const mico = document.getElementById('mico');
+  const img = document.createElement('img');
+  img.src = curSys.img;
+  img.alt = curSys.name;
+  img.style.cssText = 'width:36px;height:36px;object-fit:contain';
+  img.onerror = function() { mico.textContent = curSys.icon || '🎮'; };
+  mico.innerHTML = '';
+  mico.appendChild(img);
+
+  document.getElementById('mttl').textContent = curSys.name;
+  document.getElementById('msub').textContent = `${curMfr.name} · ${curSys.era} · ${curSys.gen}`;
+  document.getElementById('dz-hint').textContent = `Supported: ${curSys.ext}`;
+  dz.style.setProperty('--dz-accent', curMfr.color);
+
+  document.getElementById('igrid').innerHTML = [
+    ['Console', curSys.name], ['Manufacturer', curMfr.name], ['Release Year', curSys.era],
+    ['Generation', curSys.gen], ['EJS Core', curSys.core], ['ROM Formats', curSys.ext],
+  ].map(([l, v]) => `<div class="info-cell"><div class="info-lbl">${l}</div><div class="info-val">${v}</div></div>`).join('');
+
+  document.getElementById('exp-warn').style.display = curSys.experimental ? 'flex' : 'none';
+
+  document.getElementById('overlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+
+// ── Close — force kills everything ──────────────────────────────────
+function closeModal() {
+  // 1. Remove EmulatorJS loader script
+  const loader = document.getElementById('ejs-loader');
+  if (loader) loader.remove();
+
+  // 2. Wipe all EJS globals
+  ['EJS_player','EJS_gameUrl','EJS_core','EJS_gameName','EJS_color',
+   'EJS_startOnLoaded','EJS_pathtodata','EJS_Buttons','EJS_emulator']
+    .forEach(k => { try { delete window[k]; } catch(e) { window[k] = undefined; } });
+
+  // 3. Nuke emulator DOM
+  const ew = document.getElementById('emu-wrap');
+  ew.innerHTML = ''; ew.className = '';
+
+  // 4. Free ROM memory
+  if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
+
+  // 5. Hide modal
+  document.getElementById('overlay').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('x-btn').addEventListener('click', closeModal);
+
+// ── ROM handling ─────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file || !curSys) return;
+  if (romBlobUrl) URL.revokeObjectURL(romBlobUrl);
+  romBlobUrl = URL.createObjectURL(file);
+  launchEmu(romBlobUrl, file.name);
+}
+
+function launchEmu(romUrl, romName) {
+  document.getElementById('dz').style.display = 'none';
+  const ew = document.getElementById('emu-wrap');
+  ew.classList.add('on');
+
+  ew.innerHTML = `<div class="emu-loading" style="--spin-color:${curMfr.color}">
+    <div class="spinner"></div>
+    <span>Loading ${curSys.core} core…</span>
+  </div>`;
+
+  const gameDiv = document.createElement('div');
+  gameDiv.id = 'ejs-game';
+  gameDiv.style.cssText = 'width:100%;height:510px;';
+
+  const CDN = 'https://cdn.emulatorjs.org/stable/data/';
+
+  window.EJS_player        = '#ejs-game';
+  window.EJS_gameUrl       = romUrl;
+  window.EJS_core          = curSys.core;
+  window.EJS_gameName      = romName || 'ROM';
+  window.EJS_color         = curMfr.color.replace('#', '');
+  window.EJS_startOnLoaded = true;
+  window.EJS_pathtodata    = CDN;
+  window.EJS_Buttons       = {
+    playPause:true, restart:true, mute:true,
+    settings:true, fullscreen:true,
+    saveState:true, loadState:true, screenshot:true
+  };
+
+  // Swap spinner for game div once globals are set
+  ew.innerHTML = '';
+  ew.appendChild(gameDiv);
+
+  const old = document.getElementById('ejs-loader');
+  if (old) old.remove();
+
+  const script = document.createElement('script');
+  script.id  = 'ejs-loader';
+  script.src = CDN + 'loader.js?t=' + Date.now();
+  document.body.appendChild(script);
+}
+
+// ── Drag & drop ──────────────────────────────────────────────────────
+const dz = document.getElementById('dz');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+// ── Init ─────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
